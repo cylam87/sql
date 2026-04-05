@@ -209,5 +209,41 @@ Consider, for example, concepts of fariness, inequality, social structures, marg
 
 
 ```
-Your thoughts...
+As a person from Hong Kong and without an English first name, my first name has 
+a space in between two words (Ching Yeung). Unfortunately many Western-oriented 
+value systems assume that all names only consist of one word (or have some kind 
+of non-space character connecting two words, such as a hyphen). This has caused 
+me a great deal of annoyance and sometimes inconvenience throughout my life. 
+
+For example, take Google: my personal profile on Google allows me to save ‘Ching 
+Yeung’ as my first name but in many instances (such as autofill) it will fail to 
+include the second word. Not only is it a minor inconvenience at times, it also 
+raises the question of how an international enterprise as large as Google fails 
+to acknowledge - or fix - this phenomena when it is actually fairly common (many 
+cultures aside from Chinese culture utilizes spaces in their first, middle or 
+last names). This speaks to either a great deal of ignorance about names, or an 
+ignorance of how central names can be to people’s identity and how most would 
+prefer to have their names properly recognized. 
+
+Similarly I have run into this issue at U of T. Professors routinely address me 
+as ‘Ching’ when no doubt they have had no shortage of students with names similar 
+to mine throughout the years. Worst of all, U of T’s student database also fails 
+to recognize this despite taking into thousands of international students 
+annually: in my first year I found that ‘Yeung’ had become my middle name, and 
+when I enquired I was told by my registrar that U of T’s system unfortunately 
+does not recognize spaces in names, and hence I should consider either adding a 
+hyphen in my first name or deleting the space altogether so that my name would 
+not show up as “Ching Lam” in most cases. However I must also remember to change 
+my name back when I graduate lest my degree display a name that is not my legal 
+name! 
+
+In that moment I was more than a little peeved. Why should I change my name to 
+something that is decidedly not my name to satisfy U of T’s backwards and 
+presumptive system? The registrar noted offhandedly that every year they process 
+thousands of cases like this; would it not reduce a great deal of inconvenience 
+for their registrars and a good portion of their student population if U of T 
+made a change in their database that allowed spaces to be recorded in ‘Name’ 
+fields? 
+
+
 ```
