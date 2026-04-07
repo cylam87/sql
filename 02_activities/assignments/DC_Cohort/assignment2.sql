@@ -22,8 +22,8 @@ The `||` values concatenate the columns into strings.
 Edit the appropriate columns -- you're making two edits -- and the NULL rows will be fixed. 
 All the other rows will remain the same. */
 --QUERY 1
-
-
+SELECT product_name || ', ' || coalesce(product_size, '') || ' (' || coalesce(product_qty_type, 'unit') || ')' AS list_of_products
+FROM product; 
 
 
 --END QUERY
@@ -40,6 +40,10 @@ each new market date for each customer, or select only the unique market dates p
 HINT: One of these approaches uses ROW_NUMBER() and one uses DENSE_RANK(). 
 Filter the visits to dates before April 29, 2022. */
 --QUERY 2
+SELECT DISTINCT market_date, customer_id
+,DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY market_date ASC) AS visit_num
+FROM customer_purchases
+WHERE market_date < '2022-04-29';
 
 
 
@@ -53,7 +57,14 @@ only the customer’s most recent visit.
 HINT: Do not use the previous visit dates filter. */
 --QUERY 3
 
-
+SELECT *
+FROM
+		(
+		SELECT DISTINCT market_date, customer_id
+		,DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY market_date DESC) AS visit_num
+		FROM customer_purchases
+		) x
+WHERE x.visit_num = 1;
 
 
 --END QUERY
@@ -65,8 +76,13 @@ customer_purchases table that indicates how many different times that customer h
 You can make this a running count by including an ORDER BY within the PARTITION BY if desired.
 Filter the visits to dates before April 29, 2022. */
 --QUERY 4
-
-
+SELECT * 
+,COUNT() OVER (PARTITION BY customer_id, product_id ORDER BY market_date, transaction_time ASC) AS times_purchased 
+FROM customer_purchases
+WHERE market_date < '2022-04-29'; 
+--the reason I included transaction_time in ORDER BY is because there are ties (where the same customer purchases the same product multiple times on the same market date), and COUNT does not resolve these ties well
+--ie for three purchases on the same day of the same product, COUNT would increment by 3 and apply that value to all 3 purchases (e.g. 1, 2, 3, 6, 6, 6). 
+--instead of including transaction_time, an alternative would be simply to use ROW_NUMBER instead of COUNT
 
 
 --END QUERY
@@ -84,8 +100,14 @@ Remove any trailing or leading whitespaces. Don't just use a case statement for 
 
 Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
 --QUERY 5
+SELECT * 
+,CASE 
+		WHEN INSTR(product_name, '-') != 0 THEN LTRIM(SUBSTR(product_name, INSTR(product_name, '-')+1)) 
+		ELSE NULL 
+END AS 'description'
+FROM product;
 
-
+--INSTR returns 0 when no match is found, which when wrapped by SUBSTR will just return the entire product_name. Therefore a case statement is necessary to force those products to adopt a NULL value.
 
 
 --END QUERY
@@ -93,7 +115,9 @@ Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR w
 
 /* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
 --QUERY 6
-
+SELECT product_size 
+FROM product
+WHERE product_size REGEXP '[0-9]';
 
 
 
@@ -111,6 +135,29 @@ HINT: There are a possibly a few ways to do this query, but if you're struggling
 with a UNION binding them. */
 --QUERY 7
 
+DROP TABLE IF EXISTS temp.total_spend_by_date; 
+CREATE TABLE temp.total_spend_by_date AS 
+
+SELECT market_date, SUM(quantity * cost_to_customer_per_qty) as total_spend 
+FROM customer_purchases
+GROUP BY market_date;
+
+DROP TABLE IF EXISTS temp.total_spend_by_date_ranked; 
+CREATE TABLE temp.total_spend_by_date_ranked AS 
+SELECT market_date, total_spend 
+,DENSE_RANK() OVER(ORDER BY total_spend ASC) as worst_day
+,DENSE_RANK() OVER(ORDER BY total_spend DESC) as best_day
+FROM temp.total_spend_by_date; 
+
+SELECT market_date, total_spend 
+FROM temp.total_spend_by_date_ranked
+WHERE worst_day == 1 
+
+UNION 
+
+SELECT market_date, total_spend
+FROM temp.total_spend_by_date_ranked
+WHERE best_day == 1;
 
 
 
@@ -132,7 +179,26 @@ How many customers are there (y).
 Before your final group by you should have the product of those two queries (x*y).  */
 --QUERY 8
 
+DROP TABLE IF EXISTS temp.vendor_inventory_x5;
+CREATE TABLE temp.vendor_inventory_x5 AS 
+SELECT vendor_id, product_id, 5*original_price as price_per_customer
+FROM vendor_inventory
+GROUP BY vendor_id, product_id; 
 
+DROP TABLE IF EXISTS temp.vendor_sales_x5; 
+CREATE TABLE temp.vendor_sales_x5 AS 
+SELECT vendor_id, product_id, price_per_customer, customer_id 
+FROM temp.vendor_inventory_x5 
+CROSS JOIN customer; 
+--vendor_inventory_x5 = 8 rows, customer = 26 rows, cross join product = 208 rows √
+
+SELECT vendor_name, product_name, SUM(price_per_customer) as total_earnings_by_product
+FROM temp.vendor_sales_x5 as vs
+INNER JOIN vendor as v 
+		ON vs.vendor_id = v.vendor_id
+INNER JOIN product as p 
+		ON vs.product_id = p.product_id
+GROUP BY vs.vendor_id, vs.product_id; 
 
 
 --END QUERY
@@ -144,7 +210,11 @@ This table will contain only products where the `product_qty_type = 'unit'`.
 It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
 Name the timestamp column `snapshot_timestamp`. */
 --QUERY 9
-
+DROP TABLE IF EXISTS temp.product_units; 
+CREATE TABLE temp.product_units AS 
+SELECT *, CURRENT_TIMESTAMP as snapshot_timestamp
+FROM product
+WHERE product_qty_type == 'unit'; 
 
 
 
@@ -154,8 +224,10 @@ Name the timestamp column `snapshot_timestamp`. */
 /*2. Using `INSERT`, add a new row to the product_units table (with an updated timestamp). 
 This can be any product you desire (e.g. add another record for Apple Pie). */
 --QUERY 10
+INSERT INTO temp.product_units 
+VALUES(8,'Cherry Pie','10"',3,'unit',CURRENT_TIMESTAMP);
 
-
+SELECT * FROM temp.product_units;
 
 
 --END QUERY
@@ -166,8 +238,10 @@ This can be any product you desire (e.g. add another record for Apple Pie). */
 
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
 --QUERY 11
+DELETE FROM temp.product_units 
+WHERE product_id == 8 AND snapshot_timestamp == '2026-04-07 09:38:50';
 
-
+SELECT * FROM temp.product_units;
 
 
 --END QUERY
@@ -191,6 +265,39 @@ Finally, make sure you have a WHERE statement to update the right row,
 When you have all of these components, you can run the update statement. */
 --QUERY 12
 
+--add a new column current_quantity to product_units 
+ALTER TABLE temp.product_units 
+ADD current_quantity INT; 
+
+
+--get the most recent quantity per product for each vendor 
+DROP TABLE IF EXISTS temp.last_inventory;
+CREATE TABLE temp.last_inventory AS 
+
+SELECT x.market_date, x.quantity, x.product_id
+FROM 
+(
+		SELECT *
+		,ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY market_date DESC) as date_rank --temp.product_units is not grouped by vendor_id, otherwise I would partition by vendor_id, product_id instead
+		FROM vendor_inventory
+) x
+WHERE x.date_rank = 1;
+
+--create rows for products in product_units but missing from vendor_inventory, and set their quantity to 0 
+--note products in vendor_inventory but missing from product_units are excluded; these are products with product_qty_type ≠ 'unit'
+DROP TABLE IF EXISTS temp.last_inventory_zeroed;
+
+CREATE TABLE temp.last_inventory_zeroed AS
+SELECT pu.product_id, li.market_date, IFNULL(li.quantity, 0) as quantity
+FROM temp.product_units as pu
+LEFT JOIN temp.last_inventory as li
+		ON pu.product_id = li.product_id; 
+
+--set current_quantity in product_units using last_inventory
+UPDATE temp.product_units
+SET current_quantity = temp.last_inventory_zeroed.quantity 
+FROM temp.last_inventory_zeroed
+WHERE temp.product_units.product_id = temp.last_inventory_zeroed.product_id; 
 
 
 
