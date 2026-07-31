@@ -56,7 +56,8 @@ The store wants to keep customer addresses. Propose two architectures for the CU
 **HINT:** search type 1 vs type 2 slowly changing dimensions. 
 
 ```
-Your answer...
+Type 1 SCD, the overwrite model, would only have one row per customer. Any changes to a customer's attributes (change in address, postal code, name etc) would overwrite the customer's existing data in the table. 
+Type 2 SCD, which retains changes, has 1+ rows per customer. Each time there are any changes to a customer's attributes, the current set of customer attributes are written to a new row. There are 3 extra columns compared to type 1 - start date (when a new set of attributes came into effect), end date (when the set of attributes became outdated / was replaced - NULL for any row that's currently in effect), and is_current (a boolean that's set to True for a row that's in effect and False otherwise). There would also be a surrogate key to serve as a primary key as customer_id is no longer unique in this table, in addition to being able to record the set of customer attributes in effect at the time of a purchase in the past (i.e. the customer_purchases table would link to the surrogate key rather than a customer id).
 ```
 
 ***
@@ -191,5 +192,11 @@ Consider, for example, concepts of labour, bias, LLM proliferation, moderating c
 
 
 ```
-Your thoughts...
+One key ethical issue that is raised in this story is about bias. As the article explains, most modern neural networks for image recognition are built upon layers and layers of databases that were mostly manually annotated (as neural networks themselves do not fundamentally understand what these images represent). Therefore, by utilizing databases that classify images into precisely defined categories and provide them with arbitrary labels, the image recognition tools that are built using these networks reveal the biases and assumptions of those who contributed to the labeling.
+
+This ties into the topic of moderation. As the article notes, almost 1600 out of 2800 synsets used to describe people in the ImageNet database were found by the development team to be “unsafe” or “sensitive”, raising the question of how biases and discrimination can, consciously or unconsciously, make their way into other parts of ImageNet and other manually annotated databases (image-based or not).
+
+Another issue is labour and attribution of credit. The article doesn’t dwell on this much but it implies that there’s a disproportionate amount of credit received by the professors who were behind the creation of these databases, and in comparison the contributions of others - spouses, students, anonymous workers - are hidden away. 
+
+Lastly there is the issue of LLM proliferation. Recently there has been an explosion in interest in LLMs as they increasingly make their way into our day-to-day lives. Correspondingly the number of LLMs in use has also increased exponentially in recent years. However governments and international organizations have been slow to react and there have been few regulatory or ethical guidelines on how LLMs are created and used.
 ```
